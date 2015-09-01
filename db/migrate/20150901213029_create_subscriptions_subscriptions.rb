@@ -1,12 +1,12 @@
 class CreateSubscriptionsSubscriptions < ActiveRecord::Migration
   def change
     create_table :subscriptions_subscriptions do |t|
-      t.polymorphic :ownerable
+      t.references :ownerable, polymorphic: true
       t.datetime :next_bill_date
-      t.integer :status
-      t.integer :interval
-      t.integer :amount_cents_next_period
-      t.integer :amount_cents_base
+      t.integer :status,               default: 0
+      t.integer :interval,               default: 0
+      t.integer :amount_cents_next_period,               default: 0
+      t.integer :amount_cents_base,               default: 0
 
       t.timestamps null: false
     end

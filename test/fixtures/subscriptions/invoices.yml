@@ -1,0 +1,31 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  ownerable: 
+  next_payment_attempt_at: 2015-09-01 14:46:00
+  stripe_charge_id: MyString
+  status: 1
+  paid_at: 2015-09-01 14:46:00
+  slug: MyString
+  payment_status: 1
+  failed_payment_attempt_count: 1
+  last_failed_payment_attempt_at: 2015-09-01 14:46:00
+  last_failed_payment_error: MyText
+  stripe_token: MyString
+  stripe_customer_id: MyString
+  stripe_card_last_four_digits: MyString
+
+two:
+  ownerable: 
+  next_payment_attempt_at: 2015-09-01 14:46:00
+  stripe_charge_id: MyString
+  status: 1
+  paid_at: 2015-09-01 14:46:00
+  slug: MyString
+  payment_status: 1
+  failed_payment_attempt_count: 1
+  last_failed_payment_attempt_at: 2015-09-01 14:46:00
+  last_failed_payment_error: MyText
+  stripe_token: MyString
+  stripe_customer_id: MyString
+  stripe_card_last_four_digits: MyString

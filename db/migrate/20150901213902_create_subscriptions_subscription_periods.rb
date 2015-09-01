@@ -1,8 +1,8 @@
 class CreateSubscriptionsSubscriptionPeriods < ActiveRecord::Migration
   def change
     create_table :subscriptions_subscription_periods do |t|
-      t.association :subscription
-      t.integer :amount_cents
+      t.references :subscription
+      t.integer :amount_cents,               default: 0
       t.datetime :start_at
       t.datetime :end_at
 
