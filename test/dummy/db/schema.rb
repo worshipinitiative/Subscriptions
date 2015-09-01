@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150901215003) do
+ActiveRecord::Schema.define(version: 20150901215919) do
 
   create_table "subscriptions_invoice_items_invoices", force: :cascade do |t|
     t.integer  "invoice_id"
@@ -70,6 +70,39 @@ ActiveRecord::Schema.define(version: 20150901215003) do
 
   add_index "subscriptions_subscription_periods", ["end_at"], name: "index_subscriptions_subscription_periods_on_end_at"
   add_index "subscriptions_subscription_periods", ["start_at"], name: "index_subscriptions_subscription_periods_on_start_at"
+
+  create_table "subscriptions_subscription_template_groups", force: :cascade do |t|
+    t.string   "name"
+    t.boolean  "visible"
+    t.integer  "position"
+    t.boolean  "popular"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  add_index "subscriptions_subscription_template_groups", ["name"], name: "index_subscriptions_subscription_template_groups_on_name"
+  add_index "subscriptions_subscription_template_groups", ["position"], name: "index_subscriptions_subscription_template_groups_on_position"
+  add_index "subscriptions_subscription_template_groups", ["visible"], name: "index_subscriptions_subscription_template_groups_on_visible"
+
+  create_table "subscriptions_subscription_templates", force: :cascade do |t|
+    t.string   "name"
+    t.integer  "amount_cents"
+    t.integer  "interval"
+    t.string   "slug"
+    t.boolean  "visible"
+    t.integer  "subscription_template_group_id"
+    t.integer  "position"
+    t.datetime "created_at",                     null: false
+    t.datetime "updated_at",                     null: false
+  end
+
+  add_index "subscriptions_subscription_templates", ["amount_cents"], name: "index_subscriptions_subscription_templates_on_amount_cents"
+  add_index "subscriptions_subscription_templates", ["interval"], name: "index_subscriptions_subscription_templates_on_interval"
+  add_index "subscriptions_subscription_templates", ["name"], name: "index_subscriptions_subscription_templates_on_name"
+  add_index "subscriptions_subscription_templates", ["position"], name: "index_subscriptions_subscription_templates_on_position"
+  add_index "subscriptions_subscription_templates", ["slug"], name: "index_subscriptions_subscription_templates_on_slug"
+  add_index "subscriptions_subscription_templates", ["subscription_template_group_id"], name: "index_subscriptions_subscription_template_group_id"
+  add_index "subscriptions_subscription_templates", ["visible"], name: "index_subscriptions_subscription_templates_on_visible"
 
   create_table "subscriptions_subscriptions", force: :cascade do |t|
     t.integer  "ownerable_id"

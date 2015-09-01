@@ -1,0 +1,19 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  name: MyString
+  amount_cents: 1
+  interval: 1
+  slug: MyString
+  visible: false
+  subscription_template_group_id: 
+  position: 1
+
+two:
+  name: MyString
+  amount_cents: 1
+  interval: 1
+  slug: MyString
+  visible: false
+  subscription_template_group_id: 
+  position: 1
