@@ -1,0 +1,17 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  ownerable: 
+  next_bill_date: 2015-09-01 14:30:29
+  status: 1
+  interval: 1
+  amount_cents_next_period: 1
+  amount_cents_base: 1
+
+two:
+  ownerable: 
+  next_bill_date: 2015-09-01 14:30:29
+  status: 1
+  interval: 1
+  amount_cents_next_period: 1
+  amount_cents_base: 1
