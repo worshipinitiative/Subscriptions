@@ -1,0 +1,13 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  subscription: 
+  amount_cents: 1
+  start_at: 2015-09-01 14:39:02
+  end_at: 2015-09-01 14:39:02
+
+two:
+  subscription: 
+  amount_cents: 1
+  start_at: 2015-09-01 14:39:02
+  end_at: 2015-09-01 14:39:02
