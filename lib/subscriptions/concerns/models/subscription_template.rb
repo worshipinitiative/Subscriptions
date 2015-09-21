@@ -6,7 +6,7 @@ module Subscriptions
 
         included do
 
-          belongs_to :subscription_template_group
+          belongs_to :subscription_template_group, class: Subscriptions::SubscriptionTemplateGroup
 
           enum interval: { year: 0, six_month: 1, three_month: 2, month: 3 }
 

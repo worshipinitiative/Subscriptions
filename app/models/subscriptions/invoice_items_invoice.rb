@@ -1,4 +1,3 @@
-module Subscriptions
-  class InvoiceItemsInvoice < ActiveRecord::Base
-  end
+class Subscriptions::InvoiceItemsInvoice < ActiveRecord::Base
+  include Subscriptions::Concerns::Models::InvoiceItemsInvoice
 end

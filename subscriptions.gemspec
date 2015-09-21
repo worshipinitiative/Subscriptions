@@ -19,4 +19,6 @@ Gem::Specification.new do |s|
 
   s.add_dependency "rails", "~> 4.2"
   s.add_dependency "acts_as_list"
+  s.add_dependency "sidekiq"
+  s.add_dependency "friendly_id"
 end
