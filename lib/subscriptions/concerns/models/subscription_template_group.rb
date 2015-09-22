@@ -5,7 +5,7 @@ module Subscriptions
         extend ActiveSupport::Concern
         
         included do
-          has_many :subscription_templates, class: Subscriptions::SubscriptionTemplate
+          has_many :subscription_templates, class: Subscriptions::SubscriptionTemplate, dependent: :destroy
 
           scope :visible, -> { where( visible: true ) }
         end
