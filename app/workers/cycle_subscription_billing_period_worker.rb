@@ -6,7 +6,7 @@ class CycleSubscriptionBillingPeriodWorker
 
     # WARNING. DO NOT ADD ADDITIONAL LOGIC RELATED TO THE BILLING CYCLE HERE
     # THAT MUST GO INTO THE MODEL!
-    subscription = Subscription.find(subscription_id)
+    subscription = Subscriptions::Subscription.find(subscription_id)
 
     raise "Subscription #{subscription_id} is nil!" if subscription.nil?
 
