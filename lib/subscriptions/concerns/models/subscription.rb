@@ -5,6 +5,8 @@ module Subscriptions
         extend ActiveSupport::Concern
 
         included do
+          include DateTimeScopeable
+          
           belongs_to :ownerable, polymorphic: true
           has_many :subscription_periods, class: Subscriptions::SubscriptionPeriod
     

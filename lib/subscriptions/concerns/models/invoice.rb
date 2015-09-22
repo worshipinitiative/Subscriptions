@@ -8,6 +8,8 @@ module Subscriptions
         included do
           extend FriendlyId
           friendly_id :generate_slug, use: :slugged
+          
+          include DateTimeScopeable
 
           has_many :invoice_items_invoices, class: Subscriptions::InvoiceItemsInvoice
           has_many :invoice_items, through: :invoice_items_invoices
