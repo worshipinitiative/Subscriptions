@@ -20,7 +20,7 @@ module Subscriptions
           validates :amount_cents_next_period,   numericality: { greater_than_or_equal_to: 0 }
           validate :uniqueness_of_ownerable, on: :create
 
-          before_create :reset_next_bill_date
+          before_create :reset_next_bill_date, if: Proc.new { |subscription| subscription.next_bill_date.blank? }
           before_create :set_initial_amount_cents
           after_create :create_open_invoice
           
