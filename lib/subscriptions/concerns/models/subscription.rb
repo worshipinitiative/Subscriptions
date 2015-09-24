@@ -8,7 +8,7 @@ module Subscriptions
           include DateTimeScopeable
           
           belongs_to :ownerable, polymorphic: true
-          has_many :subscription_periods, class: Subscriptions::SubscriptionPeriod
+          has_many :subscription_periods, class_name: "Subscriptions::SubscriptionPeriod"
     
           # NOTE: IF YOU ADD AN INTERVAL YOU MUST HANDLE IT IN THE CYCLE SUBSCRIPTION BILLING PERIOD METHOD AND ADD IT TO THE SUBSCRIPTION TEMPLATE MODEL!!!
     

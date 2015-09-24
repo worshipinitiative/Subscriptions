@@ -11,7 +11,7 @@ module Subscriptions
           
           include DateTimeScopeable
 
-          has_many :invoice_items_invoices, class: Subscriptions::InvoiceItemsInvoice
+          has_many :invoice_items_invoices, class_name: "Subscriptions::InvoiceItemsInvoice"
           has_many :invoice_items, through: :invoice_items_invoices
 
           belongs_to :ownerable, polymorphic: true

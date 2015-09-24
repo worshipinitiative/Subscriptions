@@ -5,8 +5,8 @@ module Subscriptions
         extend ActiveSupport::Concern
         
         included do
-          belongs_to :subscription, class: Subscriptions::Subscription
-          has_one :invoice_items_invoice, as: :invoice_itemable, class: Subscriptions::InvoiceItemsInvoice
+          belongs_to :subscription, class_name: "Subscriptions::Subscription"
+          has_one :invoice_items_invoice, as: :invoice_itemable, class_name: "Subscriptions::InvoiceItemsInvoice"
 
           scope :current, ->{ where("start_at <= ? AND (end_at IS NULL OR end_at >= ?)", Time.now, Time.now) }
 
