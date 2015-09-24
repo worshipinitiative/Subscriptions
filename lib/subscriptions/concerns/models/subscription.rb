@@ -72,7 +72,7 @@ module Subscriptions
 
           # Handle cancel_at_end
           if cancel_at_end?
-            self.status = "cancelled"
+            self.cancelled!
             if previous_subscription_period.end_at.nil?
               previous_subscription_period.update_attributes( end_at: Time.now )
             end
@@ -88,12 +88,11 @@ module Subscriptions
               # This is the first subscription period.
             elsif ownerable.has_valid_card_on_file?
               # They have a card, let's bill them.
-              self.status = "good_standing"
-              self.save
+              self.good_standing!
             else
               # They don't have a card on file, so their trial is expiring
-              self.status = "trial_expired"
-              # We mark the open invoice as ready for payment so anything attached to it will get billed.
+              self.trial_expired!
+              # We mark the open invoice as ready for payment so anything attached to it will attempt to get billed.
               ownerable.open_invoice.ready_for_payment_and_charge!
               self.save
               return
@@ -189,6 +188,7 @@ module Subscriptions
             status: :cancel_at_end,
             amount_cents_next_period: 0
           )
+          status_changed_to_cancel_at_end
         end
 
         def uncancel_at_end!
@@ -197,6 +197,49 @@ module Subscriptions
             status: :good_standing,
             amount_cents_next_period: amount_cents_base
           )
+          status_reinstated
+        end
+        
+        def good_standing!
+          self.update_attributes(
+            status: :good_standing,
+          )
+          status_changed_to_good_standing
+        end
+        
+        def suspended!
+          self.update_attributes(
+            status: :suspended,
+          )
+          status_changed_to_suspended
+        end
+        
+        def cancelled!
+          self.update_attributes(
+            status: :cancelled,
+          )
+          status_changed_to_cancelled
+        end
+        
+        def suspended_payment_failed!
+          self.update_attributes(
+            status: :suspended_payment_failed,
+          )
+          status_changed_to_suspended_payment_failed!
+        end
+        
+        def trialing!
+          self.update_attributes(
+            status: :trialing,
+          )
+          status_changed_to_trialing
+        end
+        
+        def trial_expired!
+          self.update_attributes(
+            status: :trial_expired,
+          )
+          status_changed_to_trialexpired
         end
 
         def change_plan_to_template!( new_subscription_template, allow_interval_change = false )
@@ -242,7 +285,38 @@ module Subscriptions
         def active?
           good_standing? || cancel_at_end? || trialing?
         end
-
+        
+        
+        ########################
+        # Hooks
+        ########################
+        
+        def status_changed_to_good_standing
+        end
+        
+        def status_changed_to_suspended
+        end
+        
+        def status_changed_to_cancelled
+        end
+        
+        def status_changed_to_cancel_at_end
+        end
+        
+        def status_changed_to_suspended_payment_failed
+        end
+        
+        def status_changed_to_trialing
+        end
+        
+        def status_changed_to_trial_expired
+        end
+        
+        def status_reinstated
+          # This is called when the user "uncancel_at_end"s their subscription before the end of the period.
+        end
+        
+        
         #########################
         private
         #########################

@@ -147,8 +147,7 @@ module Subscriptions
           # UpdateUserMetaDataWorker.perform_async(user.id, [:total_paid, :first_order_completed_at, :completed_orders])
 
           if @send_receipt
-            Rails.logger.debug "Invoice #{id} | Queuing the send invoice receipt worker"
-            MailWorker.perform_async('invoice_receipt_email', id)
+            payment_attempt_successful
           end
         end
 
@@ -242,22 +241,35 @@ module Subscriptions
             return nil
           end
         end
-
+        
+        ########################
+        # Hooks
+        ########################
+        
+        def payment_attempt_failed
+        end
+        
+        def payment_attempt_successful
+        end
+        
+        ########################
         private
+        ########################
 
         def payment_failed!(e)
-          # TODO: Do something with e.to_s, log it or whatever
-
           self.update_attributes( last_failed_payment_attempt_at: Time.now,
                                   failed_payment_attempt_count: failed_payment_attempt_count.to_i + 1,
                                   payment_status: :payment_failed,
                                   last_failed_payment_error: e.message )
 
+          # TODO: This is marking the subscription as suspended_payment_failed
+          # after the first failed invoice. Make this configurable somehow.
           if failed_payment_attempt_count > 0
             if invoice_items.any?{|i| i.kind_of? SubscriptionPeriod}
               self.ownerable.subscription.suspended_payment_failed!
             end
           end
+          payment_failed_hook
         end
 
         def pull_stripe_customer_id_from_ownerable
