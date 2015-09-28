@@ -25,6 +25,67 @@ module Subscriptions
           after_create :create_open_invoice
           
           TRIAL_DAYS = 7
+          
+          def cancel_at_end!
+            raise "Cannot cancel at end. Status not in good standing!" unless good_standing? || trialing?
+            self.update_attributes(
+              status: :cancel_at_end,
+              amount_cents_next_period: 0
+            )
+            status_changed_to_cancel_at_end
+          end
+
+          def uncancel_at_end!
+            raise "Cannot uncancel. Status not cancel at end!" unless cancel_at_end?
+            self.update_attributes(
+              status: :good_standing,
+              amount_cents_next_period: amount_cents_base
+            )
+            status_reinstated
+          end
+        
+          def good_standing!
+            self.update_attributes(
+              status: :good_standing,
+            )
+            status_changed_to_good_standing
+          end
+        
+          def suspended!
+            self.update_attributes(
+              status: :suspended,
+            )
+            status_changed_to_suspended
+          end
+        
+          def cancelled!
+            raise "hello"
+            self.update_attributes(
+              status: :cancelled,
+            )
+            status_changed_to_cancelled
+          end
+        
+          def suspended_payment_failed!
+            self.update_attributes(
+              status: :suspended_payment_failed,
+            )
+            status_changed_to_suspended_payment_failed!
+          end
+        
+          def trialing!
+            self.update_attributes(
+              status: :trialing,
+            )
+            status_changed_to_trialing
+          end
+        
+          def trial_expired!
+            self.update_attributes(
+              status: :trial_expired,
+            )
+            status_changed_to_trial_expired
+          end
         end
 
 
@@ -182,66 +243,6 @@ module Subscriptions
           end
         end
 
-        def cancel_at_end!
-          raise "Cannot cancel at end. Status not in good standing!" unless good_standing? || trialing?
-          self.update_attributes(
-            status: :cancel_at_end,
-            amount_cents_next_period: 0
-          )
-          status_changed_to_cancel_at_end
-        end
-
-        def uncancel_at_end!
-          raise "Cannot uncancel. Status not cancel at end!" unless cancel_at_end?
-          self.update_attributes(
-            status: :good_standing,
-            amount_cents_next_period: amount_cents_base
-          )
-          status_reinstated
-        end
-        
-        def good_standing!
-          self.update_attributes(
-            status: :good_standing,
-          )
-          status_changed_to_good_standing
-        end
-        
-        def suspended!
-          self.update_attributes(
-            status: :suspended,
-          )
-          status_changed_to_suspended
-        end
-        
-        def cancelled!
-          self.update_attributes(
-            status: :cancelled,
-          )
-          status_changed_to_cancelled
-        end
-        
-        def suspended_payment_failed!
-          self.update_attributes(
-            status: :suspended_payment_failed,
-          )
-          status_changed_to_suspended_payment_failed!
-        end
-        
-        def trialing!
-          self.update_attributes(
-            status: :trialing,
-          )
-          status_changed_to_trialing
-        end
-        
-        def trial_expired!
-          self.update_attributes(
-            status: :trial_expired,
-          )
-          status_changed_to_trialexpired
-        end
-
         def change_plan_to_template!( new_subscription_template, allow_interval_change = false )
 
           previous_amount_cents_base = amount_cents_base
@@ -298,6 +299,7 @@ module Subscriptions
         end
         
         def status_changed_to_cancelled
+          raise "I shouldn't get here"
         end
         
         def status_changed_to_cancel_at_end
