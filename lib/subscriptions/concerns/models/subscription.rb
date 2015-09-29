@@ -26,6 +26,15 @@ module Subscriptions
           
           TRIAL_DAYS = 7
           
+          # On selecting a template this field map will be used
+          # to map subscription fields to subscription template fields
+          @@subscription_template_field_map = {
+            amount_cents_base: :amount_cents,
+            amount_cents_next_period: :amount_cents,
+            interval: :interval
+          }
+          cattr_accessor :subscription_template_field_map
+          
           def cancel_at_end!
             raise "Cannot cancel at end. Status not in good standing!" unless good_standing? || trialing?
             self.update_attributes(
@@ -92,11 +101,7 @@ module Subscriptions
         class_methods do
           def new_from_template( t, subscription_params = {} )
             subscription = Subscriptions::Subscription.new( subscription_params )
-
-            subscription.interval = t.interval
-            subscription.amount_cents_base   = t.amount_cents
-            subscription.amount_cents_next_period = t.amount_cents
-    
+            subscription.assign_mapped_fields_for_template(t)
             return subscription
           end
 
@@ -109,7 +114,8 @@ module Subscriptions
               end
             end
           end
-
+          
+          
         end
 
         def current_subscription_period
@@ -242,51 +248,129 @@ module Subscriptions
             "mo"
           end
         end
-
-        def change_plan_to_template!( new_subscription_template, allow_interval_change = false )
-
-          previous_amount_cents_base = amount_cents_base
-
-          if interval != new_subscription_template.interval
-            raise "Cannot change your interval" unless allow_interval_change
-            self.interval = new_subscription_template.interval
-            # This is in place so we can manually do this change through the console.
-            # Due to the logic below, if you're going from monthly to annual on the same plan, you're going to get billed immediately (treated as an upgrade).
-            # If you are going from annual to monthly, the change will take effect at the end of the billing period.
-            # Before we can enable users to make this change themselves, we need to improve the logic below to handle this better.
+        
+        def interval_to_duration
+          case interval
+          when "year"
+            1.year
+          when "six_month"
+            6.months
+          when "three_month"
+            3.months
+          when "month"
+            1.month
+          end
+        end
+        
+        def change_plan_to_template!( new_subscription_template)
+          
+          if trialing? || trial_expired? || cancelled?
+          
+            # If it's cancelled or trial_expired then just change to the new 
+            # template, reset bill date, and cycle.
+            # If trialing, don't cycle
+        
+            assign_mapped_fields_for_template(new_subscription_template)
+            reset_next_bill_date unless trialing?
+            self.save
+            
+            unless trialing?
+              # We need to cycle the billing period now
+              cycle_billing_period!
+            end
+            
+            return self
+          end
+          
+          if subscription_template.nil?
+            # Check to make sure we can identify their current template. If 
+            # they're on a custom plan we'll need to manually change their 
+            # subscription.
+            
+            Rails.logger.debug "Unable to identify their subscription template"
+            return false
+          end
+          
+          if subscription_template == new_subscription_template
+            Rails.logger.debug "Nothing to change!"
+            return false
+          end
+          
+          current_subscription_template_group = subscription_template.subscription_template_group
+          if new_subscription_template.subscription_template_group == current_subscription_template_group
+            # I'm changing to something in the same template group. Effectively
+            # I'm just changing my interval. apply at the end of the period.
+            
+            assign_mapped_fields_for_template(new_subscription_template)
+            self.save
+            
+          else # I'm changing to a new template group
+            
+            # make sure I'm not making a disallowed interval
+            # Can't change to a shorter interval
+            if new_subscription_template.interval_to_duration < subscription_template.interval_to_duration
+              Rails.logger.debug "Cannot change to a shorter interval"
+              return false
+            end
+          
+            # Find the template in the _new_ group that has the _old_ interval
+            new_same_interval_template = new_subscription_template.subscription_template_group.subscription_templates.where(interval: Subscriptions::SubscriptionTemplate.intervals[subscription_template.interval]).first
+            if new_same_interval_template.amount_cents > subscription_template.amount_cents
+              # Upgrade
+              assign_mapped_fields_for_template(new_subscription_template)
+              # The next period is reduced in cost bt the amount of value
+              # remaining on the current period.
+              self.amount_cents_next_period   = new_subscription_template.amount_cents - value_cents_remaining_on_current_period
+              reset_next_bill_date
+              self.save
+              
+              # We need to cycle the billing period now
+              cycle_billing_period!
+              
+              return self
+            else
+              # Downgrade
+              assign_mapped_fields_for_template(new_subscription_template)
+              self.save
+            end
+            
           end
 
-
-          self.amount_cents_base          = new_subscription_template.amount_cents
-          self.amount_cents_next_period   = new_subscription_template.amount_cents
-
-          if new_subscription_template.amount_cents < previous_amount_cents_base
-            # We're downgrading
-            # Just need to save
-            self.save
-
-          elsif new_subscription_template.amount_cents > previous_amount_cents_base
-            # We're upgrading
-            # Need to reset the billing period, save, and then cycle
-            reset_next_bill_date
-            self.save
-            cycle_billing_period!
-
+        end
+        
+        def value_cents_remaining_on_current_period
+          return  0 unless active?
+          if current_subscription_period.present?
+            start_date = current_subscription_period.start_at
+            end_date = self.next_bill_date
+            
+            total_days_in_period = ((end_date - start_date) / (24 * 60 * 60)).round
+            days_left_in_period = ((end_date - Time.now) / (24 * 60 * 60)).round
+            
+            value_cents_remaining = (self.amount_cents_base * (days_left_in_period.to_f/total_days_in_period)).round
           else
-            # TODO: We probably want to allow people to change plans to something with the same cost but different download counts.
-            raise "Cannot change plan to something with the same value as your current subscription."
+            raise "No current subscription period found for subscription #{self.id}"
           end
         end
 
         def subscription_template
+          # Note: If you add custom fields to the subscription templates model, you will want to override this method to check for those as well
+          
           # This attempts to find a public subscription template that matches the current subscription settings.
-          SubscriptionTemplate.find_by(interval: Subscription.intervals[interval], amount_cents: amount_cents_base)
+          
+          #TODO: Use the mapped fields to do this lookup
+          Subscriptions::SubscriptionTemplate.visible.find_by(interval: Subscriptions::Subscription.intervals[interval], amount_cents: amount_cents_base)
         end
 
         def active?
           good_standing? || cancel_at_end? || trialing?
         end
         
+        def assign_mapped_fields_for_template(template)
+          Subscriptions::Subscription.subscription_template_field_map.each do |s, t|
+            self.send("#{s}=", template.send(t))
+          end
+        end
         
         ########################
         # Hooks
@@ -318,11 +402,10 @@ module Subscriptions
           # This is called when the user "uncancel_at_end"s their subscription before the end of the period.
         end
         
-        
         #########################
         private
         #########################
-
+      
         def set_initial_amount_cents
           if trialing?
             self.amount_cents_next_period = 0

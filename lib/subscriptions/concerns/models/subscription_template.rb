@@ -19,6 +19,19 @@ module Subscriptions
           scope :visible, ->{ where(visible: true) }
           scope :ordered, ->{ order(:position) }
         end
+        
+        def interval_to_duration
+          case interval
+          when "year"
+            1.year
+          when "six_month"
+            6.months
+          when "three_month"
+            3.months
+          when "month"
+            1.month
+          end
+        end
 
         private
         def ensure_slug
