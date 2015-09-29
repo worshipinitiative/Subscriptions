@@ -134,7 +134,11 @@ module Subscriptions
         def cycle_billing_period!(charge_synchronously = false)
           Rails.logger.debug( "subscription#cycle_billing_period!" )
 
-          raise "Not time to bill Subscription #{id}!" unless next_bill_date <= Time.now
+          if next_bill_date > Time.now
+            Rails.logger.debug "Not time to bill Subscription #{id}!"
+            return
+          end
+            
           raise "Subscription #{id} was supposed to bill over a week ago! Has something gone wrong?" unless next_bill_date >= 1.week.ago
 
           # Handle cancel_at_end
@@ -262,7 +266,7 @@ module Subscriptions
           end
         end
         
-        def change_plan_to_template!( new_subscription_template)
+        def change_plan_to_template!( new_subscription_template, cycle_billing_period_synchronously = false)
           
           if trialing? || trial_expired? || cancelled?
           
@@ -276,7 +280,7 @@ module Subscriptions
             
             unless trialing?
               # We need to cycle the billing period now
-              cycle_billing_period!
+              cycle_billing_period!(cycle_billing_period_synchronously)
             end
             
             return self

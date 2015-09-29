@@ -32,6 +32,19 @@ module Subscriptions
             1.month
           end
         end
+        
+        def interval_to_s
+          case interval
+          when "year"
+            "yr"
+          when "six_month"
+            "six months"
+          when "three_month"
+            "three months"
+          when "month"
+            "mo"
+          end
+        end
 
         private
         def ensure_slug
