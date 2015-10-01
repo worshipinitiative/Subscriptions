@@ -276,11 +276,11 @@ module Subscriptions
         
             assign_mapped_fields_for_template(new_subscription_template)
             reset_next_bill_date unless trialing?
-            self.save
-            
-            unless trialing?
-              # We need to cycle the billing period now
-              cycle_billing_period!(cycle_billing_period_synchronously)
+            if self.save
+              unless trialing?
+                # We need to cycle the billing period now
+                cycle_billing_period!(cycle_billing_period_synchronously)
+              end
             end
             
             return self
@@ -292,11 +292,13 @@ module Subscriptions
             # subscription.
             
             Rails.logger.debug "Unable to identify their subscription template"
+            errors.add(:interval, "Invalid Subscription Template selected")
             return false
           end
           
           if subscription_template == new_subscription_template
             Rails.logger.debug "Nothing to change!"
+            errors.add(:interval, "That's the plan you're currently on!")
             return false
           end
           
@@ -314,6 +316,7 @@ module Subscriptions
             # Can't change to a shorter interval
             if new_subscription_template.interval_to_duration < subscription_template.interval_to_duration
               Rails.logger.debug "Cannot change to a shorter interval"
+              errors.add(:interval, "You cannot change to a shorter interval")
               return false
             end
           
@@ -339,7 +342,7 @@ module Subscriptions
             end
             
           end
-
+          return self
         end
         
         def value_cents_remaining_on_current_period
