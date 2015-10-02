@@ -120,13 +120,13 @@ module Subscriptions
             @send_receipt = false
             Rails.logger.error ("Stripe::CardError - #{e}")
             charge.refund if defined?(charge) && charge.present? # If anything went wrong in this process, refund the customer.
-            payment_failed!(e)
+            payment_attempt_failed!(e)
             raise PaymentError, e.message
           rescue Stripe::StripeError => e
             @send_receipt = false
             Rails.logger.error ("Stripe::Error - #{e}")
             charge.refund if defined?(charge) && charge.present? # If anything went wrong in this process, refund the customer.
-            payment_failed!(e)
+            payment_attempt_failed!(e)
             raise PaymentError, "I'm sorry, but there was an error with our payment processor. Your card was not charged."
           # rescue DiscountCodeError => e
           #   @send_receipt = false
@@ -139,7 +139,7 @@ module Subscriptions
             @send_receipt = false
             Rails.logger.error ("An Unknown Exception Happened in complete! - #{e.message}\n#{e.backtrace.join('\n')}")
             charge.refund if defined?(charge) && charge.present? # If anything went wrong in this process, refund the customer.
-            payment_failed!(e)
+            payment_attempt_failed!(e)
             raise PaymentError, "There was an error with our payment processor. Invoice #{self.id} was not paid."
           end
 
@@ -256,7 +256,7 @@ module Subscriptions
         private
         ########################
 
-        def payment_failed!(e)
+        def payment_attempt_failed!(e)
           self.update_attributes( last_failed_payment_attempt_at: Time.now,
                                   failed_payment_attempt_count: failed_payment_attempt_count.to_i + 1,
                                   payment_status: :payment_failed,
@@ -269,7 +269,7 @@ module Subscriptions
               self.ownerable.subscription.suspended_payment_failed!
             end
           end
-          payment_failed_hook
+          payment_attempt_failed
         end
 
         def pull_stripe_customer_id_from_ownerable

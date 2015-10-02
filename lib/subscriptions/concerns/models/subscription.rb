@@ -79,7 +79,7 @@ module Subscriptions
             self.update_attributes(
               status: :suspended_payment_failed,
             )
-            status_changed_to_suspended_payment_failed!
+            status_changed_to_suspended_payment_failed
           end
         
           def trialing!
