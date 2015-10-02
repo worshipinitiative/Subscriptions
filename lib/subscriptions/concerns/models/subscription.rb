@@ -165,12 +165,13 @@ module Subscriptions
               self.trial_expired!
               # We mark the open invoice as ready for payment so anything attached to it will attempt to get billed.
               ownerable.open_invoice.ready_for_payment_and_charge!
+              create_open_invoice
               self.save
               return
             end
           end
     
-          raise "Subscription #{id} isn't in good standing. Can't cycle." unless good_standing? || trialing?
+          raise "Subscription #{id} isn't in good standing. Can't cycle." unless good_standing? || trialing? || trial_expired?
 
           raise "Couldn't find owner for subscription #{id}" if ownerable.nil?
 
@@ -221,6 +222,14 @@ module Subscriptions
           save
     
           open_invoice.add_invoice_item( next_subscription_period )
+
+          # If their trial is expired, we need to mark it as good standing.
+          # If the billing here fails, it will mark their subscrition as suspended_payment_failed
+          if trial_expired?
+            self.good_standing!
+          end
+          
+          
           if charge_synchronously
             begin
               open_invoice.ready_for_payment!
