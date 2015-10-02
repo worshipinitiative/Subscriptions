@@ -23,6 +23,7 @@ module Subscriptions
           before_create :reset_next_bill_date, if: Proc.new { |subscription| subscription.next_bill_date.blank? }
           before_create :set_initial_amount_cents
           after_create :create_open_invoice
+          before_save :update_current_status_at
           
           TRIAL_DAYS = 7
           
@@ -469,7 +470,12 @@ module Subscriptions
         def uniqueness_of_ownerable
           errors.add(:ownerable, "Must be unique") if Subscriptions::Subscription.where(ownerable_type: ownerable_type, ownerable_id: ownerable_id).count > 0
         end
-    
+        
+        def update_current_status_at
+          if self.status_changed?
+            self.current_status_at = Time.now
+          end
+        end
       end
     end
   end
