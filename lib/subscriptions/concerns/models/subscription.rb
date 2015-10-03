@@ -72,7 +72,6 @@ module Subscriptions
           end
         
           def cancelled!
-            raise "hello"
             self.update_attributes(
               status: :cancelled,
             )
@@ -286,11 +285,13 @@ module Subscriptions
             # If it's cancelled or trial_expired then just change to the new 
             # template, reset bill date, and cycle.
             # If trialing, don't cycle
-        
+            was_trialing = trialing?
             assign_mapped_fields_for_template(new_subscription_template)
-            reset_next_bill_date unless trialing?
+            reset_next_bill_date unless was_trialing
+            # Set their status to :good_standing now. They will cycle, and trigger an invoice which will update the status if necessarily
+            self.status = :good_standing
             if self.save
-              unless trialing?
+              unless was_trialing
                 # We need to cycle the billing period now
                 cycle_billing_period!(cycle_billing_period_synchronously)
               end
