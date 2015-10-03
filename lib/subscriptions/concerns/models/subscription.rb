@@ -16,6 +16,9 @@ module Subscriptions
     
           enum status: {good_standing: 0, suspended: 1, cancelled: 2, cancel_at_end: 4, suspended_payment_failed: 5, trialing: 6, trial_expired: 7}
 
+          scope :cycleable, ->{ where.not(status: [self.statuses[:suspended], self.statuses[:cancelled]]) }
+          scope :ready_to_cycle, ->{ cycleable.where( "next_bill_date < ?", Time.now ) }
+          
           validates :amount_cents_base,          numericality: { greater_than_or_equal_to: 0 }
           validates :amount_cents_next_period,   numericality: { greater_than_or_equal_to: 0 }
           validate :uniqueness_of_ownerable, on: :create
@@ -107,7 +110,7 @@ module Subscriptions
           end
 
           def cycle_subscriptions( async = true )
-            Subscriptions::Subscription.where( "next_bill_date < ?", Time.now ).each do |s|
+            Subscriptions::Subscription.ready_to_cycle.find_each do |s|
               if async
                 CycleSubscriptionBillingPeriodWorker.perform_async( s.id )
               else
