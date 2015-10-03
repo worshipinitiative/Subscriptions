@@ -289,7 +289,7 @@ module Subscriptions
             assign_mapped_fields_for_template(new_subscription_template)
             reset_next_bill_date unless was_trialing
             # Set their status to :good_standing now. They will cycle, and trigger an invoice which will update the status if necessarily
-            self.status = :good_standing
+            self.status = :good_standing unless was_trialing
             if self.save
               unless was_trialing
                 # We need to cycle the billing period now
