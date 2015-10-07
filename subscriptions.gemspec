@@ -9,9 +9,9 @@ Gem::Specification.new do |s|
   s.version     = Subscriptions::VERSION
   s.authors     = ["Ben McFadden"]
   s.email       = ["ben@forgeapps.com"]
-  s.homepage    = "TODO"
-  s.summary     = "TODO: Summary of Subscriptions."
-  s.description = "TODO: Description of Subscriptions."
+  s.homepage    = "https://github.com/Lightstock/Subscriptions"
+  s.summary     = "Subscriptions is a work in progress."
+  s.description = "Subscriptions is a work in progress, but is ultimately designed to become a drop-in subscription management and billing system."
   s.license     = "MIT"
 
   s.files = Dir["{app,config,db,lib}/**/*", "MIT-LICENSE", "Rakefile", "README.rdoc"]
