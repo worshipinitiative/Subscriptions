@@ -7,7 +7,7 @@ module Subscriptions
         
         included do
           extend FriendlyId
-          friendly_id :generate_slug, use: :slugged
+          friendly_id :generate_slug, use: :scoped, scope: [:ownerable_id, :ownerable_type]
           
           include DateTimeScopeable
 
@@ -281,7 +281,7 @@ module Subscriptions
         end
 
         def generate_slug
-          "#{ownerable.id.to_s.rjust(9, '0')}#{(ownerable.invoices.where.not(slug: 'nil').count * 7).to_s.rjust(4, '0')}"
+          "#{ownerable.id.to_s.rjust(9, '0')}#{(ownerable.invoices.where.not(slug: nil).count * 7).to_s.rjust(4, '0')}"
         end
       end
     end
