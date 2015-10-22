@@ -152,6 +152,7 @@ module Subscriptions
             end
             # We mark the open invoice as ready for payment so any outstanding add-on downloads get paid for.
             ownerable.open_invoice.ready_for_payment_and_charge!
+            create_open_invoice
             self.save
             return
           end
