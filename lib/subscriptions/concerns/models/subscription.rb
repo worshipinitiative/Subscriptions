@@ -16,7 +16,7 @@ module Subscriptions
     
           enum status: {good_standing: 0, suspended: 1, cancelled: 2, cancel_at_end: 4, suspended_payment_failed: 5, trialing: 6, trial_expired: 7}
 
-          scope :cycleable, ->{ where.not(status: [self.statuses[:suspended], self.statuses[:cancelled]]) }
+          scope :cycleable, ->{ where.not(status: [self.statuses[:suspended], self.statuses[:cancelled], self.statuses[:trial_expired]]) }
           scope :ready_to_cycle, ->{ cycleable.where( "next_bill_date < ?", Time.now ) }
           
           validates :amount_cents_base,          numericality: { greater_than_or_equal_to: 0 }
@@ -175,7 +175,7 @@ module Subscriptions
             end
           end
     
-          raise "Subscription #{id} isn't in good standing. Can't cycle." unless good_standing? || trialing? || trial_expired?
+          raise "Subscription #{id} isn't in good standing. Can't cycle." unless good_standing? || trialing?
 
           raise "Couldn't find owner for subscription #{id}" if ownerable.nil?
 
