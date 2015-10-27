@@ -146,6 +146,7 @@ module Subscriptions
           # UpdateUserMetaDataWorker.perform_async(user.id, [:total_paid, :first_order_completed_at, :completed_orders])
 
           if @send_receipt
+            unsuspend_subscription
             payment_attempt_successful
           end
         end
@@ -239,6 +240,18 @@ module Subscriptions
           else
             return nil
           end
+        end
+        
+        def unsuspend_subscription
+          # We don't want to unsuspend if there's still pending invoices out there.
+          return if ownerable.invoices.ready_for_payment.count > 0
+          
+          if ownerable.subscription.suspended_payment_failed?
+            # The owners subscription is suspended, but they don't have any
+            # outstanding invocies now. Let's unsuspend it.
+            ownerable.subscription.unsuspend_for_payment_failed!
+          end
+          
         end
         
         ########################

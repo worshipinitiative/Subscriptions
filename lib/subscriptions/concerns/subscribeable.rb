@@ -15,9 +15,7 @@ module Subscriptions
   
       def bill_outstanding_invoices!
         invoices.ready_for_payment.each(&:charge!)
-        #TODO: Move this to the subscription model
-        # If we get here, they all succeeded
-        subscription.good_standing!
+        # This raises a PaymentError exception when an invoices fails to charge
       end
       
       def cancel_outstanding_invoices!

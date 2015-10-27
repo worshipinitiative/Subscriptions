@@ -151,7 +151,7 @@ module Subscriptions
             return
           end
             
-          raise "Subscription #{id} was supposed to bill over a week ago! Has something gone wrong?" unless next_bill_date >= 1.week.ago
+          raise "Subscription #{id} was supposed to bill over 14 days ago! Has something gone wrong?" unless next_bill_date > 14.days.ago
 
           # Handle cancel_at_end
           if cancel_at_end?
@@ -403,6 +403,18 @@ module Subscriptions
           end
         end
         
+        def unsuspend_for_payment_failed!
+          return if good_standing? # Nothing to see here!
+          
+          # What we're doing here is checking to see if their subscription was
+          # supposed to renew in the next 7 days (or in the past). If it was, we're resetting their bill date so they don't get billed again right away.
+          if self.next_bill_date <= 7.days.from_now
+            self.next_bill_date = interval_from_now
+            self.save
+          end
+          good_standing!
+        end
+        
         ########################
         # Hooks
         ########################
@@ -478,7 +490,7 @@ module Subscriptions
             6.months.from_now
           when "three_month"
             3.months.from_now
-          when month
+          when "month"
             1.month.from_now
           end
         end
