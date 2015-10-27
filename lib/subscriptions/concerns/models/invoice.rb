@@ -11,6 +11,8 @@ module Subscriptions
           
           include DateTimeScopeable
 
+          MAXIMUM_RETRY_COUNT = 4
+
           has_many :invoice_items_invoices, class_name: "Subscriptions::InvoiceItemsInvoice"
           has_many :invoice_items, through: :invoice_items_invoices
 
@@ -18,6 +20,8 @@ module Subscriptions
 
           enum status: [ :open, :ready_for_payment, :paid, :cancelled, :refunded ]
           enum payment_status: [ :uncharged, :payment_succeeded, :payment_failed, :payment_partially_refunded, :payment_fully_refunded ]
+
+          scope :retryable, ->{ ready_for_payment.where("failed_payment_attempt_count < ?", MAXIMUM_RETRY_COUNT) }
 
           after_create :pull_stripe_customer_id_from_ownerable
 
@@ -27,7 +31,34 @@ module Subscriptions
           #TODO: Validate only one open invoice per user
 
         end
-      
+        
+        class_methods do
+          def retry_failed_charges
+            Subscriptions::Invoice.retryable.find_each do |invoice|
+              ChargeSubscriptionInvoiceWorker.perform_async(invoice.id) if invoice.ready_to_retry?
+            end
+          end
+        end
+        
+        def ready_to_retry?
+          # This returns invoices that are ready to be charged now. In the rare case that an uncharged, but ready_for_payment, invoice gets into here it will return true. This is by design.
+          return false unless ready_for_payment?
+          if failed_payment_attempt_count < MAXIMUM_RETRY_COUNT
+            # 0 failed attempts = 0 hours
+            # 1 failed attempt  = 22 hours since last failed payment attempt
+            # 2 failed attempts = 46 hours since last failed payment attempt
+            # 3 failed attempts = 70 hours since last failed payment attempt
+            
+            # the 2 hour offset is just so we don't have to wait an extra day between attempts if we get off by a few minutes.
+            required_time_between_payments = (failed_payment_attempt_count * 24.hours) - 2.hours
+            
+            if last_failed_payment_attempt_at.nil? || (Time.now - last_failed_payment_attempt_at) >= required_time_between_payments
+              return true
+            end
+          end
+          return false
+        end
+        
         def invoice_items
           invoice_items_invoices.includes(:invoice_itemable).collect{ |iii| iii.invoice_itemable }
         end
