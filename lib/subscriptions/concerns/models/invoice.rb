@@ -50,11 +50,10 @@ module Subscriptions
         end
 
         def ready_for_payment_and_charge!( async = true )
-          self.update_attributes( status: :ready_for_payment )
+          self.ready_for_payment!
 
           if async
-            # TODO: Refactor so we don't have this stupid delay.
-            ChargeSubscriptionInvoiceWorker.perform_in(10.seconds, id )
+            ChargeSubscriptionInvoiceWorker.perform_async( id )
           else
             self.update_attributes( status: :ready_for_payment )
             ChargeSubscriptionInvoiceWorker.new.perform(id )
