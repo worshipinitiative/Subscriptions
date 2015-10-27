@@ -11,7 +11,10 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150901215919) do
+ActiveRecord::Schema.define(version: 20151027232205) do
+
+  # These are extensions that must be enabled in order to support this database
+  enable_extension "plpgsql"
 
   create_table "subscriptions_invoice_items_invoices", force: :cascade do |t|
     t.integer  "invoice_id"
@@ -42,22 +45,25 @@ ActiveRecord::Schema.define(version: 20150901215919) do
     t.string   "stripe_card_name_on_card"
     t.integer  "total_paid_cents",               default: 0
     t.integer  "tax_paid_cents",                 default: 0
-    t.integer  "amount_refunded_cents"
     t.datetime "created_at",                                 null: false
     t.datetime "updated_at",                                 null: false
+    t.integer  "subtotal_refunded_cents",        default: 0
+    t.integer  "tax_refunded_cents",             default: 0
   end
 
-  add_index "subscriptions_invoices", ["failed_payment_attempt_count"], name: "index_subscriptions_invoices_on_failed_payment_attempt_count"
-  add_index "subscriptions_invoices", ["next_payment_attempt_at"], name: "index_subscriptions_invoices_on_next_payment_attempt_at"
-  add_index "subscriptions_invoices", ["paid_at"], name: "index_subscriptions_invoices_on_paid_at"
-  add_index "subscriptions_invoices", ["payment_status"], name: "index_subscriptions_invoices_on_payment_status"
-  add_index "subscriptions_invoices", ["slug"], name: "index_subscriptions_invoices_on_slug"
-  add_index "subscriptions_invoices", ["status"], name: "index_subscriptions_invoices_on_status"
-  add_index "subscriptions_invoices", ["stripe_charge_id"], name: "index_subscriptions_invoices_on_stripe_charge_id"
-  add_index "subscriptions_invoices", ["stripe_customer_id"], name: "index_subscriptions_invoices_on_stripe_customer_id"
-  add_index "subscriptions_invoices", ["stripe_token"], name: "index_subscriptions_invoices_on_stripe_token"
-  add_index "subscriptions_invoices", ["tax_paid_cents"], name: "index_subscriptions_invoices_on_tax_paid_cents"
-  add_index "subscriptions_invoices", ["total_paid_cents"], name: "index_subscriptions_invoices_on_total_paid_cents"
+  add_index "subscriptions_invoices", ["failed_payment_attempt_count"], name: "index_subscriptions_invoices_on_failed_payment_attempt_count", using: :btree
+  add_index "subscriptions_invoices", ["next_payment_attempt_at"], name: "index_subscriptions_invoices_on_next_payment_attempt_at", using: :btree
+  add_index "subscriptions_invoices", ["paid_at"], name: "index_subscriptions_invoices_on_paid_at", using: :btree
+  add_index "subscriptions_invoices", ["payment_status"], name: "index_subscriptions_invoices_on_payment_status", using: :btree
+  add_index "subscriptions_invoices", ["slug"], name: "index_subscriptions_invoices_on_slug", using: :btree
+  add_index "subscriptions_invoices", ["status"], name: "index_subscriptions_invoices_on_status", using: :btree
+  add_index "subscriptions_invoices", ["stripe_charge_id"], name: "index_subscriptions_invoices_on_stripe_charge_id", using: :btree
+  add_index "subscriptions_invoices", ["stripe_customer_id"], name: "index_subscriptions_invoices_on_stripe_customer_id", using: :btree
+  add_index "subscriptions_invoices", ["stripe_token"], name: "index_subscriptions_invoices_on_stripe_token", using: :btree
+  add_index "subscriptions_invoices", ["subtotal_refunded_cents"], name: "index_subscriptions_invoices_on_subtotal_refunded_cents", using: :btree
+  add_index "subscriptions_invoices", ["tax_paid_cents"], name: "index_subscriptions_invoices_on_tax_paid_cents", using: :btree
+  add_index "subscriptions_invoices", ["tax_refunded_cents"], name: "index_subscriptions_invoices_on_tax_refunded_cents", using: :btree
+  add_index "subscriptions_invoices", ["total_paid_cents"], name: "index_subscriptions_invoices_on_total_paid_cents", using: :btree
 
   create_table "subscriptions_subscription_periods", force: :cascade do |t|
     t.integer  "subscription_id"
@@ -68,8 +74,8 @@ ActiveRecord::Schema.define(version: 20150901215919) do
     t.datetime "updated_at",                  null: false
   end
 
-  add_index "subscriptions_subscription_periods", ["end_at"], name: "index_subscriptions_subscription_periods_on_end_at"
-  add_index "subscriptions_subscription_periods", ["start_at"], name: "index_subscriptions_subscription_periods_on_start_at"
+  add_index "subscriptions_subscription_periods", ["end_at"], name: "index_subscriptions_subscription_periods_on_end_at", using: :btree
+  add_index "subscriptions_subscription_periods", ["start_at"], name: "index_subscriptions_subscription_periods_on_start_at", using: :btree
 
   create_table "subscriptions_subscription_template_groups", force: :cascade do |t|
     t.string   "name"
@@ -80,9 +86,9 @@ ActiveRecord::Schema.define(version: 20150901215919) do
     t.datetime "updated_at", null: false
   end
 
-  add_index "subscriptions_subscription_template_groups", ["name"], name: "index_subscriptions_subscription_template_groups_on_name"
-  add_index "subscriptions_subscription_template_groups", ["position"], name: "index_subscriptions_subscription_template_groups_on_position"
-  add_index "subscriptions_subscription_template_groups", ["visible"], name: "index_subscriptions_subscription_template_groups_on_visible"
+  add_index "subscriptions_subscription_template_groups", ["name"], name: "index_subscriptions_subscription_template_groups_on_name", using: :btree
+  add_index "subscriptions_subscription_template_groups", ["position"], name: "index_subscriptions_subscription_template_groups_on_position", using: :btree
+  add_index "subscriptions_subscription_template_groups", ["visible"], name: "index_subscriptions_subscription_template_groups_on_visible", using: :btree
 
   create_table "subscriptions_subscription_templates", force: :cascade do |t|
     t.string   "name"
@@ -96,13 +102,13 @@ ActiveRecord::Schema.define(version: 20150901215919) do
     t.datetime "updated_at",                     null: false
   end
 
-  add_index "subscriptions_subscription_templates", ["amount_cents"], name: "index_subscriptions_subscription_templates_on_amount_cents"
-  add_index "subscriptions_subscription_templates", ["interval"], name: "index_subscriptions_subscription_templates_on_interval"
-  add_index "subscriptions_subscription_templates", ["name"], name: "index_subscriptions_subscription_templates_on_name"
-  add_index "subscriptions_subscription_templates", ["position"], name: "index_subscriptions_subscription_templates_on_position"
-  add_index "subscriptions_subscription_templates", ["slug"], name: "index_subscriptions_subscription_templates_on_slug"
-  add_index "subscriptions_subscription_templates", ["subscription_template_group_id"], name: "index_subscriptions_subscription_template_group_id"
-  add_index "subscriptions_subscription_templates", ["visible"], name: "index_subscriptions_subscription_templates_on_visible"
+  add_index "subscriptions_subscription_templates", ["amount_cents"], name: "index_subscriptions_subscription_templates_on_amount_cents", using: :btree
+  add_index "subscriptions_subscription_templates", ["interval"], name: "index_subscriptions_subscription_templates_on_interval", using: :btree
+  add_index "subscriptions_subscription_templates", ["name"], name: "index_subscriptions_subscription_templates_on_name", using: :btree
+  add_index "subscriptions_subscription_templates", ["position"], name: "index_subscriptions_subscription_templates_on_position", using: :btree
+  add_index "subscriptions_subscription_templates", ["slug"], name: "index_subscriptions_subscription_templates_on_slug", using: :btree
+  add_index "subscriptions_subscription_templates", ["subscription_template_group_id"], name: "index_subscriptions_subscription_template_group_id", using: :btree
+  add_index "subscriptions_subscription_templates", ["visible"], name: "index_subscriptions_subscription_templates_on_visible", using: :btree
 
   create_table "subscriptions_subscriptions", force: :cascade do |t|
     t.integer  "ownerable_id"
@@ -114,10 +120,12 @@ ActiveRecord::Schema.define(version: 20150901215919) do
     t.integer  "amount_cents_base",        default: 0
     t.datetime "created_at",                           null: false
     t.datetime "updated_at",                           null: false
+    t.datetime "current_status_at"
   end
 
-  add_index "subscriptions_subscriptions", ["interval"], name: "index_subscriptions_subscriptions_on_interval"
-  add_index "subscriptions_subscriptions", ["next_bill_date"], name: "index_subscriptions_subscriptions_on_next_bill_date"
-  add_index "subscriptions_subscriptions", ["status"], name: "index_subscriptions_subscriptions_on_status"
+  add_index "subscriptions_subscriptions", ["current_status_at"], name: "index_subscriptions_subscriptions_on_current_status_at", using: :btree
+  add_index "subscriptions_subscriptions", ["interval"], name: "index_subscriptions_subscriptions_on_interval", using: :btree
+  add_index "subscriptions_subscriptions", ["next_bill_date"], name: "index_subscriptions_subscriptions_on_next_bill_date", using: :btree
+  add_index "subscriptions_subscriptions", ["status"], name: "index_subscriptions_subscriptions_on_status", using: :btree
 
 end
