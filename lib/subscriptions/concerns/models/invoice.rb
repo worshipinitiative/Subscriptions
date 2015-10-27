@@ -182,15 +182,33 @@ module Subscriptions
           end
         end
 
-        def refund
-          if payment_succeeded?
+        def refund!
+          if paid? && payment_succeeded?
             charge = Stripe::Charge.retrieve(stripe_charge_id)
             if charge.refund
               ActiveRecord::Base.transaction do
-                update_attributes(payment_status: :payment_fully_refunded, amount_refunded_cents: total_paid_cents)
+                update_attributes(payment_status: :payment_fully_refunded, subtotal_refunded_cents: subtotal_paid_cents, tax_refunded_cents: tax_paid_cents, status: :refunded)
               end
             else
               raise "Something just went wrong when we tried to refund this invoice."
+            end
+          elsif partially_refunded?
+            raise "NOT IMPLEMENTED: Refunding a partially refunded order is not currently implemented as we haven't had a need for it yet."
+          else
+            raise "Unable to refund an invoice that isn't in payment_successful status"
+          end
+        end
+        
+        def refund_tax!
+          return false unless tax_paid_cents > 0
+          if paid? && payment_succeeded?
+            charge = Stripe::Charge.retrieve(stripe_charge_id)
+            if charge.refund(amount: tax_paid_cents)
+              ActiveRecord::Base.transaction do
+                update_attributes(payment_status: :payment_partially_refunded, tax_refunded_cents: tax_paid_cents)
+              end
+            else
+              raise "Something just went wrong when we tried to refund the tax on this invoice."
             end
           elsif partially_refunded?
             raise "NOT IMPLEMENTED: Refunding a partially refunded order is not currently implemented as we haven't had a need for it yet."
@@ -226,6 +244,26 @@ module Subscriptions
 
         def subtotal
           cents_to_float( subtotal_cents )
+        end
+        
+        def subtotal_refunded
+          cents_to_float subtotal_refunded_cents
+        end
+
+        def tax_paid
+          cents_to_float( tax_paid_cents )
+        end
+  
+        def tax_refunded
+          cents_to_float tax_refunded_cents
+        end
+
+        def amount_refunded
+          cents_to_float( amount_refunded_cents )
+        end
+  
+        def amount_refunded_cents
+          subtotal_refunded_cents + tax_refunded_cents
         end
 
         def tax_owed
