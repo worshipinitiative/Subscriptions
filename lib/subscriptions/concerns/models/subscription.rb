@@ -14,9 +14,9 @@ module Subscriptions
     
           enum interval: { year: 0, six_month: 1, three_month: 2, month: 3 }
     
-          enum status: {good_standing: 0, suspended: 1, cancelled: 2, cancel_at_end: 4, suspended_payment_failed: 5, trialing: 6, trial_expired: 7}
+          enum status: {good_standing: 0, suspended: 1, cancelled: 2, cancel_at_end: 4, suspended_payment_failed: 5, trialing: 6, trial_expired: 7, cancelled_payment_failed: 8}
 
-          scope :cycleable, ->{ where.not(status: [self.statuses[:suspended], self.statuses[:cancelled], self.statuses[:trial_expired]]) }
+          scope :cycleable, ->{ where.not(status: [self.statuses[:suspended], self.statuses[:suspended_payment_failed], self.statuses[:cancelled], self.statuses[:cancelled_payment_failed], self.statuses[:trial_expired]]) }
           scope :ready_to_cycle, ->{ cycleable.where( "next_bill_date < ?", Time.now ) }
           
           validates :amount_cents_base,          numericality: { greater_than_or_equal_to: 0 }
@@ -83,6 +83,13 @@ module Subscriptions
               status: :suspended_payment_failed,
             )
             status_changed_to_suspended_payment_failed
+          end
+          
+          def cancelled_payment_failed!
+            self.update_attributes(
+              status: :cancelled_payment_failed,
+            )
+            status_changed_to_cancelled_payment_failed
           end
         
           def trialing!
