@@ -19,6 +19,11 @@ module Subscriptions
         # If we get here, they all succeeded
         subscription.good_standing!
       end
+      
+      def cancel_outstanding_invoices!
+        # Only call this if you want to forgive any outstanding payments for this user
+        invoices.ready_for_payment.each(&:cancelled!)
+      end
     end
   end
 end

@@ -86,9 +86,11 @@ module Subscriptions
           end
           
           def cancelled_payment_failed!
+            raise "Cannot mark status as 'cancelled_payment_failed'. Status not 'suspended_payment_failed!" unless suspended_payment_failed?
             self.update_attributes(
               status: :cancelled_payment_failed,
             )
+            ownerable.cancel_outstanding_invoices!
             status_changed_to_cancelled_payment_failed
           end
         
@@ -412,13 +414,15 @@ module Subscriptions
         end
         
         def status_changed_to_cancelled
-          raise "I shouldn't get here"
         end
         
         def status_changed_to_cancel_at_end
         end
         
         def status_changed_to_suspended_payment_failed
+        end
+        
+        def status_changed_to_cancelled_payment_failed
         end
         
         def status_changed_to_trialing
