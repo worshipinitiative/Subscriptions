@@ -147,7 +147,7 @@ module Subscriptions
           # Handle cancel_at_end
           if cancel_at_end?
             self.cancelled!
-            if previous_subscription_period.end_at.nil?
+            if previous_subscription_period.present? && previous_subscription_period.end_at.nil?
               previous_subscription_period.update_attributes( end_at: Time.now )
             end
             # We mark the open invoice as ready for payment so any outstanding add-on downloads get paid for.
