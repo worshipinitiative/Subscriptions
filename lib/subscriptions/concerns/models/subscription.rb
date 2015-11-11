@@ -204,14 +204,17 @@ module Subscriptions
           end
 
           Rails.logger.debug( "subscription#cycle_billing_period!  Creating next subscription period" )
-          next_subscription_period = subscription_periods.create(
+          next_subscription_period = subscription_periods.build(
             {
               start_at: start_at,
               end_at: nil,
-              amount_cents: amount_cents_next_period,
-              #paid: false
+              amount_cents: amount_cents_next_period
             }
           )
+          
+          next_subscription_period = prepare_next_subscription_period(next_subscription_period)
+          
+          next_subscription_period.save
 
           # Update the subscription for this upcoming month
           self.amount_cents_next_period   = amount_cents_base
@@ -232,8 +235,10 @@ module Subscriptions
             end
           end
 
+          prepare_subscription_for_next_subscription_period(next_subscription_period)
+
           save
-    
+
           open_invoice.add_invoice_item( next_subscription_period )
 
           # If their trial is expired, we need to mark it as good standing.
@@ -241,7 +246,10 @@ module Subscriptions
           if trial_expired?
             self.good_standing!
           end
-          
+
+          # Create a new open invoice for charges that come up between now and next month
+          Rails.logger.debug( "subscription#cycle_billing_period!  Creating new open invoice" )
+          ownerable.invoices.create( { status: :open } )
           
           if charge_synchronously
             begin
@@ -255,10 +263,6 @@ module Subscriptions
             open_invoice.ready_for_payment_and_charge!
           end
 
-          # Create a new open invoice for charges that come up between now and next month
-          Rails.logger.debug( "subscription#cycle_billing_period!  Creating new open invoice" )
-          ownerable.invoices.create( { status: :open } )
-    
           return self
         end
 
@@ -503,6 +507,18 @@ module Subscriptions
           if self.status_changed?
             self.current_status_at = Time.now
           end
+        end
+        
+        ####################################
+        ## Hooks mid-cycle billing period ##
+        ####################################
+        
+        def prepare_next_subscription_period(next_subscription_period)
+          return next_subscription_period
+        end
+        
+        def prepare_subscription_for_next_subscription_period(next_subscription_period)
+          return
         end
       end
     end

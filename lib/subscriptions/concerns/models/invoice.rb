@@ -25,6 +25,8 @@ module Subscriptions
 
           after_create :pull_stripe_customer_id_from_ownerable
 
+          validates :subtotal_paid_cents,   numericality: { only_integer: true, greater_than_or_equal_to: 0 }
+          validates :total_paid_cents,      numericality: { only_integer: true, greater_than_or_equal_to: 0 }
           validates :tax_paid_cents,        numericality: { only_integer: true, greater_than_or_equal_to: 0 }
           validates :amount_refunded_cents, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
 
@@ -216,7 +218,10 @@ module Subscriptions
             raise "Unable to refund an invoice that isn't in payment_successful status"
           end
         end
-
+        
+        def subscription_periods
+          invoice_items.select{|i| i.kind_of? Subscriptions::SubscriptionPeriod}
+        end
 
         def total_paid
           cents_to_float( total_paid_cents )

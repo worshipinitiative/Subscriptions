@@ -6,7 +6,6 @@ module Subscriptions
       included do
         has_one :subscription, as: :ownerable, class_name: "Subscriptions::Subscription"
         has_many :invoices, as: :ownerable, class_name: "Subscriptions::Invoice"
-        has_many :chord_chart_downloads, as: :ownerable
       end
   
       def open_invoice
