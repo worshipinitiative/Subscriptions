@@ -194,7 +194,7 @@ module Subscriptions
             raise "No open invoice for #{ownerable_type} #{ownerable}"
           end
 
-          last_subscription_period = previous_subscription_period
+          last_subscription_period = current_subscription_period
 
           if last_subscription_period.nil? #This is the first month (ever, or in a long time)
             start_at = Time.now
@@ -293,7 +293,7 @@ module Subscriptions
         end
         
         def change_plan_to_template!( new_subscription_template, cycle_billing_period_synchronously = false)
-          
+          Rails.logger.debug "change_plan_to_template!"
           if trialing? || trial_expired? || cancelled?
           
             # If it's cancelled or trial_expired then just change to the new 
@@ -334,7 +334,7 @@ module Subscriptions
           if new_subscription_template.subscription_template_group == current_subscription_template_group
             # I'm changing to something in the same template group. Effectively
             # I'm just changing my interval. apply at the end of the period.
-            
+            Rails.logger.debug "Matching Group - Changing interval only!"
             assign_mapped_fields_for_template(new_subscription_template)
             self.save
             
@@ -342,6 +342,8 @@ module Subscriptions
             
             # make sure I'm not making a disallowed interval
             # Can't change to a shorter interval
+            Rails.logger.debug "Not Matching Group - Changing Plans!"
+            
             if new_subscription_template.interval_to_duration < subscription_template.interval_to_duration
               Rails.logger.debug "Cannot change to a shorter interval"
               errors.add(:interval, "You cannot change to a shorter interval")
@@ -352,10 +354,11 @@ module Subscriptions
             new_same_interval_template = new_subscription_template.subscription_template_group.subscription_templates.where(interval: Subscriptions::SubscriptionTemplate.intervals[subscription_template.interval]).first
             if new_same_interval_template.amount_cents > subscription_template.amount_cents
               # Upgrade
+              Rails.logger.debug "Upgrade detected"
               assign_mapped_fields_for_template(new_subscription_template)
               # The next period is reduced in cost bt the amount of value
               # remaining on the current period.
-              self.amount_cents_next_period   = new_subscription_template.amount_cents - value_cents_remaining_on_current_period
+              perform_prorating(new_subscription_template)
               reset_next_bill_date
               self.save
               
@@ -365,6 +368,7 @@ module Subscriptions
               return self
             else
               # Downgrade
+              Rails.logger.debug "Downgrade detected"
               assign_mapped_fields_for_template(new_subscription_template)
               self.save
             end
@@ -519,6 +523,14 @@ module Subscriptions
         
         def prepare_subscription_for_next_subscription_period(next_subscription_period)
           return
+        end
+        
+        #######################################
+        ## Hooks mid-change_plan_to_template ##
+        #######################################
+        
+        def perform_prorating(new_subscription_template)
+          self.amount_cents_next_period   = new_subscription_template.amount_cents - value_cents_remaining_on_current_period
         end
       end
     end
