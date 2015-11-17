@@ -184,7 +184,7 @@ module Subscriptions
             end
           end
     
-          raise "Subscription #{id} isn't in good standing. Can't cycle." unless good_standing? || trialing?
+          raise "Subscription #{id} isn't in good standing. It's in #{status}. Can't cycle." unless good_standing? || trialing?
 
           raise "Couldn't find owner for subscription #{id}" if ownerable.nil?
 
