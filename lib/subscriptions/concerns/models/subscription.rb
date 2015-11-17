@@ -199,7 +199,7 @@ module Subscriptions
           if last_subscription_period.nil? #This is the first month (ever, or in a long time)
             start_at = Time.now
           else
-            last_subscription_period.update_attributes( end_at: Time.now )
+            last_subscription_period.update_attributes( end_at: 1.second.ago )
             start_at = last_subscription_period.end_at + 1.second
           end
 
