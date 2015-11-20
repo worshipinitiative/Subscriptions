@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20151027232205) do
+ActiveRecord::Schema.define(version: 20151120235320) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -121,9 +121,11 @@ ActiveRecord::Schema.define(version: 20151027232205) do
     t.datetime "created_at",                           null: false
     t.datetime "updated_at",                           null: false
     t.datetime "current_status_at"
+    t.datetime "first_paid_at"
   end
 
   add_index "subscriptions_subscriptions", ["current_status_at"], name: "index_subscriptions_subscriptions_on_current_status_at", using: :btree
+  add_index "subscriptions_subscriptions", ["first_paid_at"], name: "index_subscriptions_subscriptions_on_first_paid_at", using: :btree
   add_index "subscriptions_subscriptions", ["interval"], name: "index_subscriptions_subscriptions_on_interval", using: :btree
   add_index "subscriptions_subscriptions", ["next_bill_date"], name: "index_subscriptions_subscriptions_on_next_bill_date", using: :btree
   add_index "subscriptions_subscriptions", ["status"], name: "index_subscriptions_subscriptions_on_status", using: :btree

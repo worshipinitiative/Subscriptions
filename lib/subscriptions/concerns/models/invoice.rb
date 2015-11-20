@@ -178,6 +178,13 @@ module Subscriptions
           # Rails.logger.debug "Invoice #{self.id} | Queuing the update user meta worker"
           # UpdateUserMetaDataWorker.perform_async(user.id, [:total_paid, :first_order_completed_at, :completed_orders])
 
+          begin
+            ownerable.subscription.update_first_paid_at!
+          rescue
+            #TODO: Do we really want to rescue from this? From _any_ error?
+            nil
+          end
+          
           if @send_receipt
             unsuspend_subscription
             payment_attempt_successful

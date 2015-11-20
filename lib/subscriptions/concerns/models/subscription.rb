@@ -423,6 +423,13 @@ module Subscriptions
           good_standing!
         end
         
+        def update_first_paid_at!(force = false)
+          return unless force || self.first_paid_at.nil?
+          self.update_attributes(
+            first_paid_at: (ownerable.invoices.paid.where("total_paid_cents > 0").order(paid_at: :asc).first.paid_at rescue nil)
+          )
+        end
+        
         ########################
         # Hooks
         ########################
