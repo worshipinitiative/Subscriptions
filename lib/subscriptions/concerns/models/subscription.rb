@@ -314,6 +314,9 @@ module Subscriptions
             return self
           end
           
+          # If they're at cancel_at_end we're assuming they're trying to reinstate their subscription by upgrading
+          self.uncancel_at_end! if cancel_at_end?
+          
           if subscription_template.nil?
             # Check to make sure we can identify their current template. If 
             # they're on a custom plan we'll need to manually change their 
