@@ -1,6 +1,7 @@
 class ChargeSubscriptionInvoiceWorker
   include Sidekiq::Worker
-  sidekiq_options retry: 2
+  # We don't retry. It is your job to retry them if needed.
+  sidekiq_options retry: false
 
   def perform( invoice_id )
     invoice = Subscriptions::Invoice.find(invoice_id)
