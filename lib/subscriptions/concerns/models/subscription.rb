@@ -28,7 +28,8 @@ module Subscriptions
           after_create :create_open_invoice
           before_save :update_current_status_at
           
-          TRIAL_DAYS = 7
+          @@trial_days = 7
+          cattr_accessor :trial_days
           
           # On selecting a template this field map will be used
           # to map subscription fields to subscription template fields
@@ -221,7 +222,7 @@ module Subscriptions
 
           # Set the next billing date.
           if trialing?
-            self.next_bill_date = TRIAL_DAYS.days.from_now
+            self.next_bill_date = Subscriptions::Subscription.trial_days.days.from_now
           else
             case interval.to_sym
             when :year
