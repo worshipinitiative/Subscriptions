@@ -10,6 +10,7 @@ module Subscriptions
           acts_as_list
 
           scope :visible, -> { where( visible: true ) }
+          scope :ordered, ->{ order(:position) }
         end
       end
     end
