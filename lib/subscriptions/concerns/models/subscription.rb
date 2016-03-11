@@ -318,45 +318,34 @@ module Subscriptions
           # If they're at cancel_at_end we're assuming they're trying to reinstate their subscription by upgrading
           self.uncancel_at_end! if cancel_at_end?
           
-          if subscription_template.nil?
-            # Check to make sure we can identify their current template. If 
-            # they're on a custom plan we'll need to manually change their 
-            # subscription.
-            
-            Rails.logger.debug "Unable to identify their subscription template"
-            errors.add(:interval, "Invalid Subscription Template selected")
-            return false
-          end
           
-          if subscription_template == new_subscription_template
+          
+          if subscription_template.present? && subscription_template == new_subscription_template
             Rails.logger.debug "Nothing to change!"
             errors.add(:interval, "That's the plan you're currently on!")
             return false
           end
           
-          current_subscription_template_group = subscription_template.subscription_template_group
-          if new_subscription_template.subscription_template_group == current_subscription_template_group
+          
+          
+          
+          if new_subscription_template.value_is_equal_to(subscription_template)
             # I'm changing to something in the same template group. Effectively
             # I'm just changing my interval. apply at the end of the period.
             Rails.logger.debug "Matching Group - Changing interval only!"
             assign_mapped_fields_for_template(new_subscription_template)
             self.save
             
-          else # I'm changing to a new template group
-            
-            # make sure I'm not making a disallowed interval
-            # Can't change to a shorter interval
-            Rails.logger.debug "Not Matching Group - Changing Plans!"
-            
+          else # I'm changing to a new template value
+          
+            # New Plan / value
             if new_subscription_template.interval_to_duration < subscription_template.interval_to_duration
               Rails.logger.debug "Cannot change to a shorter interval"
               errors.add(:interval, "You cannot change to a shorter interval")
               return false
             end
-          
-            # Find the template in the _new_ group that has the _old_ interval
-            new_same_interval_template = new_subscription_template.subscription_template_group.subscription_templates.where(interval: Subscriptions::SubscriptionTemplate.intervals[subscription_template.interval]).first
-            if new_same_interval_template.amount_cents > subscription_template.amount_cents
+            
+            if new_subscription_template.value_is_greater_than(subscription_template)
               # Upgrade
               Rails.logger.debug "Upgrade detected"
               assign_mapped_fields_for_template(new_subscription_template)
@@ -367,7 +356,7 @@ module Subscriptions
               self.save
               
               # We need to cycle the billing period now
-              cycle_billing_period!
+              cycle_billing_period!(cycle_billing_period_synchronously)
               
               return self
             else
@@ -376,7 +365,6 @@ module Subscriptions
               assign_mapped_fields_for_template(new_subscription_template)
               self.save
             end
-            
           end
           return self
         end
@@ -402,7 +390,7 @@ module Subscriptions
           # This attempts to find a public subscription template that matches the current subscription settings.
           
           #TODO: Use the mapped fields to do this lookup
-          Subscriptions::SubscriptionTemplate.visible.find_by(interval: Subscriptions::Subscription.intervals[interval], amount_cents: amount_cents_base)
+          Subscriptions::SubscriptionTemplate.visible.find_or_initialize_by(interval: Subscriptions::Subscription.intervals[interval], amount_cents: amount_cents_base)
         end
 
         def active?

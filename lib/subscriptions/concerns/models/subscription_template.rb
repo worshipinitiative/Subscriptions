@@ -20,6 +20,34 @@ module Subscriptions
           scope :ordered, ->{ order(:position) }
         end
         
+        def comparison_value
+          # This is the value that is used to decide if it's an upgrade or a downgrade.
+          
+          # It is expected that this be overwritten
+          case interval
+          when "year"
+            amount_cents / 12
+          when "six_month"
+            amount_cents / 6
+          when "three_month"
+            amount_cents / 3
+          when "month"
+            amount_cents
+          end
+        end
+        
+        def value_is_greater_than(comparison_template)
+          comparison_value > comparison_template.comparison_value
+        end
+        
+        def value_is_equal_to(comparison_template)
+          comparison_value == comparison_template.comparison_value
+        end
+        
+        def value_is_less_than(comparison_template)
+          comparison_value < comparison_template.comparison_value
+        end
+        
         def interval_to_duration
           case interval
           when "year"
