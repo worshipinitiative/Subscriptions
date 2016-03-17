@@ -295,7 +295,7 @@ module Subscriptions
         
         def change_plan_to_template!( new_subscription_template, cycle_billing_period_synchronously = false)
           Rails.logger.debug "change_plan_to_template!"
-          if trialing? || trial_expired? || cancelled?
+          if trialing? || trial_expired? || cancelled? || cancelled_payment_failed?
           
             # If it's cancelled or trial_expired then just change to the new 
             # template, reset bill date, and cycle.
