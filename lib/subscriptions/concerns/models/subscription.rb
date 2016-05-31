@@ -132,12 +132,11 @@ module Subscriptions
         end
 
         def current_subscription_period
-          subscription_periods.current.order("start_at DESC").first
+          subscription_periods.current.order( start_at: :desc ).limit(1).first
         end
 
-        # TODO: This doesn't work unless the previous subscription period started over a week ago.
         def previous_subscription_period
-          subscription_periods.where( "start_at <= ? AND end_at IS NULL", 1.week.ago ).order( start_at: :desc ).first
+          subscription_periods.order( start_at: :desc ).limit(2)[1] rescue nil
         end
 
         # Create a subscription period for the upcoming month
@@ -157,8 +156,8 @@ module Subscriptions
           # Handle cancel_at_end
           if cancel_at_end?
             self.cancelled!
-            if previous_subscription_period.present? && previous_subscription_period.end_at.nil?
-              previous_subscription_period.update_attributes( end_at: Time.now )
+            if current_subscription_period.present? && current_subscription_period.end_at.nil?
+              current_subscription_period.update_attributes( end_at: Time.now )
             end
             # We mark the open invoice as ready for payment so any outstanding add-on downloads get paid for.
             ownerable.open_invoice.ready_for_payment_and_charge!
@@ -213,7 +212,7 @@ module Subscriptions
             }
           )
           
-          next_subscription_period = prepare_next_subscription_period(next_subscription_period)
+          next_subscription_period = prepare_next_subscription_period(next_subscription_period, last_subscription_period)
           
           next_subscription_period.save
 
@@ -516,7 +515,7 @@ module Subscriptions
         ## Hooks mid-cycle billing period ##
         ####################################
         
-        def prepare_next_subscription_period(next_subscription_period)
+        def prepare_next_subscription_period(next_subscription_period, current_subscription_period)
           return next_subscription_period
         end
         
