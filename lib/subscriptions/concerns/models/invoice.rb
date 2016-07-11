@@ -11,8 +11,6 @@ module Subscriptions
           
           include DateTimeScopeable
 
-          MAXIMUM_RETRY_COUNT = 4
-
           has_many :invoice_items_invoices, class_name: "Subscriptions::InvoiceItemsInvoice"
           has_many :invoice_items, through: :invoice_items_invoices
 
@@ -21,7 +19,7 @@ module Subscriptions
           enum status: [ :open, :ready_for_payment, :paid, :cancelled, :refunded ]
           enum payment_status: [ :uncharged, :payment_succeeded, :payment_failed, :payment_partially_refunded, :payment_fully_refunded ]
 
-          scope :retryable, ->{ ready_for_payment.where("failed_payment_attempt_count < ?", MAXIMUM_RETRY_COUNT) }
+          scope :retryable, ->{ ready_for_payment.where("failed_payment_attempt_count < ?", self.class.maximum_failed_payment_retry_count ) }
 
           after_create :pull_stripe_customer_id_from_ownerable
 
@@ -40,21 +38,33 @@ module Subscriptions
               ChargeSubscriptionInvoiceWorker.perform_async(invoice.id) if invoice.ready_to_retry?
             end
           end
+          
+          # Maximum number of times to retry failed payments
+          def maximum_failed_payment_retry_count
+            failed_payment_retry_intervals.size rescue 0
+          end
+          
+          # Retry intervals, specified in seconds since the _previous_ failure.
+          # Thus, if you want them all a day apart, just use an array of 86400
+          # This should always have maximum_failed_payment_retry_count entries.
+          # Value defaults to 1 day if you don't provide this properly.
+          def failed_payment_retry_intervals
+            # 0, 1, 1, 1 days between retries.
+            # This results in charges on days 0, 1, 2, 3 ish.
+            [0, 79200, 79200, 79200]
+          end
         end
-        
+                
         def ready_to_retry?
           # This returns invoices that are ready to be charged now. In the rare case that an uncharged, but ready_for_payment, invoice gets into here it will return true. This is by design.
           return false unless ready_for_payment?
-          if failed_payment_attempt_count < MAXIMUM_RETRY_COUNT
-            # 0 failed attempts = 0 hours
-            # 1 failed attempt  = 22 hours since last failed payment attempt
-            # 2 failed attempts = 46 hours since last failed payment attempt
-            # 3 failed attempts = 70 hours since last failed payment attempt
+          if failed_payment_attempt_count < self.class.maximum_failed_payment_retry_count
+
+            interval_until_next_retry_allowed = self.class.failed_payment_retry_intervals[failed_payment_attempt_count] rescue 86400
             
-            # the 2 hour offset is just so we don't have to wait an extra day between attempts if we get off by a few minutes.
-            required_time_between_payments = (failed_payment_attempt_count * 24.hours) - 2.hours
+            interval_elapsed = Time.now - last_failed_payment_attempt_at rescue 0
             
-            if last_failed_payment_attempt_at.nil? || (Time.now - last_failed_payment_attempt_at) >= required_time_between_payments
+            if last_failed_payment_attempt_at.nil? || (interval_elapsed >= interval_until_next_retry_allowed)
               return true
             end
           end
