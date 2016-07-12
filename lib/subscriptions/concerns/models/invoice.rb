@@ -19,7 +19,7 @@ module Subscriptions
           enum status: [ :open, :ready_for_payment, :paid, :cancelled, :refunded ]
           enum payment_status: [ :uncharged, :payment_succeeded, :payment_failed, :payment_partially_refunded, :payment_fully_refunded ]
 
-          scope :retryable, ->{ ready_for_payment.where("failed_payment_attempt_count < ?", self.class.maximum_failed_payment_retry_count ) }
+          scope :retryable, ->{ ready_for_payment.where("failed_payment_attempt_count < ?", self.maximum_failed_payment_retry_count ) }
 
           after_create :pull_stripe_customer_id_from_ownerable
 
